@@ -1,9 +1,9 @@
 import streamlit as st
-import openai
+from openai import OpenAI
 import os
 
-# Set up OpenAI API key securely from Streamlit Cloud secrets
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# Setup client using OpenAI v1+ SDK (secure, cloud-ready)
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 st.set_page_config(page_title="Grant Proposal Assistant", layout="centered")
 st.title("🎯 AI Grant Proposal Assistant")
@@ -31,14 +31,13 @@ Timeline: {timeline}
 
 Write in a professional and persuasive tone.
 """
-
             try:
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model="gpt-4",
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.7
                 )
-                proposal = response["choices"][0]["message"]["content"]
+                proposal = response.choices[0].message.content
                 st.subheader("📝 Generated Grant Proposal")
                 st.write(proposal)
 
