@@ -14,7 +14,8 @@ if not os.getenv("OPENAI_API_KEY"):
     st.stop()
 
 # Set up LLM (API key is picked up from env automatically)
-llm = ChatOpenAI(model="gpt-4", temperature=0.7)
+# llm = ChatOpenAI(model="gpt-4", temperature=0.7)
+llm = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=api_key)
 
 # Define Prompt
 grant_proposal_prompt = PromptTemplate(
