@@ -11,7 +11,7 @@ load_dotenv()
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
 if not OPENAI_API_KEY:
-    st.error("OPENAI_API_KEY not found. Please set it in Streamlit Secrets or a local .env file.")
+    st.error("OPENAI_API_KEY not found. Please set it in Streamlit Secrets or a .env file.")
     st.stop()
 
 # -----------------------
@@ -41,7 +41,7 @@ grant_proposal_prompt = PromptTemplate(
 )
 
 # -----------------------
-# Streamlit App Interface
+# Streamlit App UI
 # -----------------------
 st.set_page_config(page_title="AI Grant Proposal Assistant", layout="centered")
 st.title("AI-Powered Grant Proposal Writing Assistant")
