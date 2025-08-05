@@ -6,16 +6,15 @@ from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 import os
 
-# Load API key
+# Load environment variables
 load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
 
-if not api_key:
-    st.error("OPENAI_API_KEY not found. Please check your .env file.")
+if not os.getenv("OPENAI_API_KEY"):
+    st.error("OPENAI_API_KEY not found. Please check your .env file or Streamlit secrets.")
     st.stop()
 
-# Set up LLM (best practice: pass API key explicitly)
-llm = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=api_key)
+# Set up LLM (API key is picked up from env automatically)
+llm = ChatOpenAI(model="gpt-4", temperature=0.7)
 
 # Define Prompt
 grant_proposal_prompt = PromptTemplate(
