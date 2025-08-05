@@ -1,36 +1,23 @@
-# Gen AI Apps for Business - Shan Ali Shah Sayed
+# writingassistant.py
 
-# -------------------------
-
-# Environmental Conservation: Grant Writing Assistant
-
-# -------------------------
-
-# !pip install langchain openai python-dotenv
+import streamlit as st
 from langchain.chat_models import ChatOpenAI
-from langchain.chains import ConversationChain
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 import os
 
-
-# -------------------------
-
-# Loading API key which is saved in a file named .env saved in the same folder as this jupyter file. 
-
+# Load API key
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
-os.environ["OPENAI_API_KEY"] = api_key
 
-# -------------------------
+if not api_key:
+    st.error("OPENAI_API_KEY not found. Please check your .env file.")
+    st.stop()
 
-llm = ChatOpenAI(model="gpt-4", temperature=0.7)
+# Set up LLM (best practice: pass API key explicitly)
+llm = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=api_key)
 
-
-# -------------------------
-
-# Defining Prompt Template for Grant Proposal Writing as per the assignment topic chosen: Environmental Conservation
-
+# Define Prompt
 grant_proposal_prompt = PromptTemplate(
     input_variables=[
         "project_title", "project_description", "project_objectives",
@@ -45,40 +32,36 @@ grant_proposal_prompt = PromptTemplate(
     ),
 )
 
+# Streamlit UI
+st.title("Grant Proposal Writing Assistant")
+st.markdown("Fill in the details below to generate a grant proposal introduction.")
 
-# -------------------------
-
-def collect_inputs():
-    print("Welcome to the Grant Proposal Writing Assistant!")
-    print("Please provide details about your project and the funder to create a tailored grant proposal introduction.\n")
-
-    project_title = input("Enter the project title: ")
-    project_description = input("Provide a brief description of the project: ")
-    project_objectives = input("List the key objectives of the project (separate by commas): ")
-    funder_mission = input("What is the mission of the funder? ")
-    funder_focus_areas = input("What are the focus areas of the funder? ")
-    funder_requirements = input("What are the requirements of the funder? ")
-
-    return {
-        "project_title": project_title,
-        "project_description": project_description,
-        "project_objectives": project_objectives,
-        "funder_mission": funder_mission,
-        "funder_focus_areas": funder_focus_areas,
-        "funder_requirements": funder_requirements,
-    }
+with st.form("grant_form"):
+    project_title = st.text_input("Project Title", placeholder="e.g., Restoring Wetlands in Upstate NY")
+    project_description = st.text_area("Project Description", placeholder="e.g., Restore 100 acres of wetlands...")
+    project_objectives = st.text_area("Project Objectives (comma separated)", placeholder="e.g., Improve biodiversity, Reduce flood risk")
+    funder_mission = st.text_area("Funder's Mission")
+    funder_focus_areas = st.text_area("Funder's Focus Areas")
+    funder_requirements = st.text_area("Funder's Requirements")
     
+    submitted = st.form_submit_button("Generate Proposal")
 
-# -------------------------
+if submitted:
+    try:
+        inputs = {
+            "project_title": project_title,
+            "project_description": project_description,
+            "project_objectives": project_objectives,
+            "funder_mission": funder_mission,
+            "funder_focus_areas": funder_focus_areas,
+            "funder_requirements": funder_requirements,
+        }
 
-user_inputs = collect_inputs()
-formatted_prompt = grant_proposal_prompt.format(**user_inputs)
-conversation = ConversationChain(llm=llm)
-response = conversation.run(formatted_prompt)
-print("\n--- Grant Proposal Introduction ---\n")
-print(response)
+        prompt = grant_proposal_prompt.format(**inputs)
+        response = llm.invoke(prompt)
 
+        st.subheader("Generated Grant Proposal Introduction:")
+        st.write(response.content)
 
-# -------------------------
-
-# --
+    except Exception as e:
+        st.error(f"Error generating proposal: {e}")
