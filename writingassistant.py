@@ -1,55 +1,50 @@
 import streamlit as st
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
-from dotenv import load_dotenv
 import os
 
 # -----------------------
-# Load API Key
+# Load API Key from Secrets (Streamlit Cloud) or .env (local)
 # -----------------------
-load_dotenv()
-OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", None)
 
 if not OPENAI_API_KEY:
-    st.error("OPENAI_API_KEY not found. Please set it in Streamlit Secrets or a .env file.")
+    st.error("OPENAI_API_KEY not found. Please set it in your environment or Streamlit Secrets.")
     st.stop()
 
-# -----------------------
-# Create ChatOpenAI Instance
-# -----------------------
-llm = ChatOpenAI(
-    api_key=OPENAI_API_KEY,
-    model="gpt-4",
-    temperature=0.7
-)
+# Initialize LLM
+llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4", temperature=0.7)
 
 # -----------------------
-# Grant Proposal Prompt Template
+# Prompt Template
 # -----------------------
-grant_proposal_prompt = PromptTemplate(
+
+prompt_template = PromptTemplate(
     input_variables=[
         "project_title", "project_description", "project_objectives",
         "funder_mission", "funder_focus_areas", "funder_requirements"
     ],
-    template=(
-        "Write a compelling grant proposal introduction for a project titled '{project_title}'. "
-        "The project aims to {project_description}. Key objectives include: {project_objectives}. "
-        "The funder’s mission is: {funder_mission}, with focus areas in {funder_focus_areas}. "
-        "Proposals must meet these requirements: {funder_requirements}. "
-        "Ensure the introduction emphasizes alignment with the funder’s goals and demonstrates measurable impact."
-    ),
+    template="""
+Write a compelling grant proposal introduction for a project titled "{project_title}". 
+The project aims to {project_description}. Key objectives include: {project_objectives}. 
+The funder’s mission is: {funder_mission}, with focus areas in {funder_focus_areas}. 
+Proposals must meet these requirements: {funder_requirements}. 
+Emphasize alignment with the funder’s goals and demonstrate measurable impact.
+"""
 )
 
 # -----------------------
-# Streamlit App UI
+# Streamlit App
 # -----------------------
-st.set_page_config(page_title="AI Grant Proposal Assistant", layout="centered")
-st.title("AI-Powered Grant Proposal Writing Assistant")
-st.markdown("Fill in the details below to generate a professional proposal introduction:")
 
-with st.form("proposal_form"):
+st.set_page_config(page_title="AI Grant Writing Assistant", layout="centered")
+st.title("🎯 AI Grant Proposal Assistant")
+st.write("Fill out the details to generate a grant proposal introduction:")
+
+with st.form("grant_form"):
     project_title = st.text_input("Project Title")
-    project_description = st.text_area("Brief Project Description")
+    project_description = st.text_area("Project Description")
     project_objectives = st.text_area("Key Objectives (comma-separated)")
     funder_mission = st.text_area("Funder’s Mission")
     funder_focus_areas = st.text_area("Funder’s Focus Areas")
@@ -59,7 +54,7 @@ with st.form("proposal_form"):
 
 if submitted:
     try:
-        prompt = grant_proposal_prompt.format(
+        filled_prompt = prompt_template.format(
             project_title=project_title,
             project_description=project_description,
             project_objectives=project_objectives,
@@ -68,10 +63,9 @@ if submitted:
             funder_requirements=funder_requirements
         )
 
-        response = llm.invoke(prompt)
-
-        st.subheader("Generated Proposal Introduction")
-        st.success(response)
+        result = llm.invoke(filled_prompt)
+        st.subheader("✨ Generated Proposal")
+        st.success(result)
 
     except Exception as e:
-        st.error(f"Error generating proposal: {e}")
+        st.error(f"❌ Error generating proposal: {e}")
