@@ -1,25 +1,20 @@
-# writingassistant.py
-
 import os
 import streamlit as st
 from dotenv import load_dotenv
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
-# Load environment variables from .env (for local dev)
+# Load .env (for local dev)
 load_dotenv()
 
-# Get API key from Streamlit secrets (cloud) or .env (local)
-api_key = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
-
-if not api_key or not api_key.startswith("sk-"):
-    st.error("OPENAI_API_KEY is missing or malformed. Please check your .env or Streamlit secrets.")
+# Ensure API key is present in env
+if not os.getenv("OPENAI_API_KEY"):
+    st.error("OPENAI_API_KEY is missing. Please check your .env or Streamlit secrets.")
     st.stop()
 
-# Initialize LLM
-llm = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=api_key)
+# ✅ No need to pass API key directly anymore
+llm = ChatOpenAI(model="gpt-4", temperature=0.7)
 
-# Prompt template
 grant_proposal_prompt = PromptTemplate(
     input_variables=[
         "project_title", "project_description", "project_objectives",
@@ -34,7 +29,6 @@ grant_proposal_prompt = PromptTemplate(
     ),
 )
 
-# Streamlit UI
 st.title("Grant Proposal Writing Assistant")
 st.markdown("Fill in the details below to generate a grant proposal introduction.")
 
