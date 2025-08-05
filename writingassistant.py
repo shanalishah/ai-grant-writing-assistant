@@ -1,13 +1,14 @@
 import os
 import streamlit as st
 import openai
+from openai import OpenAI
 from dotenv import load_dotenv
 
 # Load environment variables (for local testing)
 load_dotenv()
 
-# Get the OpenAI API key
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# Initialize OpenAI client
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 # Streamlit UI
 st.set_page_config(page_title="Grant Writing Assistant", layout="wide")
@@ -37,15 +38,14 @@ Timeline: {timeline}
 
 Please write in a professional and clear tone suitable for funding agencies.
 """
-
             try:
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model="gpt-4",
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.7,
                 )
-                proposal_text = response.choices[0].message["content"]
+                proposal_text = response.choices[0].message.content
                 st.success("Proposal generated successfully!")
                 st.text_area("Generated Proposal", proposal_text, height=400)
             except Exception as e:
-                st.error(f"An error occurred: {e}")
+                st.error(f"An error occurred:\n\n{e}")
