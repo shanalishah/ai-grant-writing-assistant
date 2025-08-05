@@ -3,21 +3,19 @@
 import streamlit as st
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
-from dotenv import load_dotenv
 import os
 
-# Load environment variables
-load_dotenv()
+# Load API key (from Streamlit secrets or fallback to .env for local)
+api_key = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 
-if not os.getenv("OPENAI_API_KEY"):
-    st.error("OPENAI_API_KEY not found. Please check your .env file or Streamlit secrets.")
+if not api_key:
+    st.error("OPENAI_API_KEY not found. Please add it to Streamlit secrets or a local .env file.")
     st.stop()
 
-# Set up LLM (API key is picked up from env automatically)
-# llm = ChatOpenAI(model="gpt-4", temperature=0.7)
+# Set up the language model
 llm = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=api_key)
 
-# Define Prompt
+# Prompt template
 grant_proposal_prompt = PromptTemplate(
     input_variables=[
         "project_title", "project_description", "project_objectives",
@@ -46,6 +44,7 @@ with st.form("grant_form"):
     
     submitted = st.form_submit_button("Generate Proposal")
 
+# Handle submission
 if submitted:
     try:
         inputs = {
