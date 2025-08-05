@@ -12,7 +12,7 @@ if not os.getenv("OPENAI_API_KEY"):
     st.error("OPENAI_API_KEY is missing. Please check your .env or Streamlit secrets.")
     st.stop()
 
-# ✅ No need to pass API key directly anymore
+# No need to pass API key directly anymore
 llm = ChatOpenAI(model="gpt-4", temperature=0.7)
 
 grant_proposal_prompt = PromptTemplate(
