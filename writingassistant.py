@@ -1,32 +1,27 @@
 import streamlit as st
 from langchain_openai import ChatOpenAI
-from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
-# Load environment variables (for local testing only)
+# Load environment variables (local only)
 load_dotenv()
 
-# Get API key from environment (works in Streamlit Cloud via secrets.toml)
+# Get OpenAI key from environment (or Streamlit Cloud secrets)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# Explicitly create OpenAI client to avoid the `proxies` bug
-client = OpenAI(api_key=OPENAI_API_KEY)
-
-# Initialize LangChain's ChatOpenAI with the client
+# ✅ Initialize ChatOpenAI the correct way (NO client param)
 llm = ChatOpenAI(
     model="gpt-4",
     temperature=0.7,
-    client=client
+    openai_api_key=OPENAI_API_KEY
 )
 
-# Streamlit app UI
+# Streamlit UI
 st.set_page_config(page_title="Grant Writing Assistant", layout="wide")
 st.title("AI Grant Proposal Writing Assistant")
 
 st.markdown("Fill in the fields below and click **Generate Proposal Text** to get started.")
 
-# Form inputs
 objective = st.text_area("Project Objective", help="Describe the primary goal of the grant project.")
 audience = st.text_area("Target Audience", help="Who will benefit from this project?")
 outcomes = st.text_area("Expected Outcomes", help="What are the intended outcomes or impact?")
@@ -49,7 +44,6 @@ if st.button("Generate Proposal Text"):
 
             Please write a professional, clear, and concise grant proposal draft.
             """
-
             try:
                 response = llm.invoke(prompt)
                 st.success("Proposal generated successfully!")
