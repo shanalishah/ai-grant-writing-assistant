@@ -1,33 +1,31 @@
-import streamlit as st
 import os
+import streamlit as st
+from dotenv import load_dotenv
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
-# ----------------------------
-# Load API key securely from secrets.toml
-# ----------------------------
-os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+# -------------------------
+# Page config
+st.set_page_config(page_title="AI-Powered Grant Proposal Assistant", page_icon="🌿")
 
-# ----------------------------
-# Streamlit App UI
-# ----------------------------
-st.set_page_config(page_title="Grant Writing Assistant", layout="centered")
+# -------------------------
+# Header
 st.title("🌿 AI-Powered Grant Proposal Assistant")
 st.write("Generate a compelling grant proposal introduction aligned with funder requirements.")
 
-# ----------------------------
-# Collect User Inputs
-# ----------------------------
-project_title = st.text_input("Project Title")
-project_description = st.text_area("Brief Project Description")
-project_objectives = st.text_area("Key Objectives (comma-separated)")
-funder_mission = st.text_area("Funder Mission")
-funder_focus_areas = st.text_area("Funder Focus Areas")
-funder_requirements = st.text_area("Funder Proposal Requirements")
+# -------------------------
+# Load API Key from Streamlit secrets
+os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
-# ----------------------------
-# LangChain Prompt Template
-# ----------------------------
+# -------------------------
+# Set up LLM
+llm = ChatOpenAI(
+    model="gpt-4",
+    temperature=0.7,
+)
+
+# -------------------------
+# Define prompt template
 grant_proposal_prompt = PromptTemplate(
     input_variables=[
         "project_title", "project_description", "project_objectives",
@@ -42,30 +40,37 @@ grant_proposal_prompt = PromptTemplate(
     ),
 )
 
-# ----------------------------
-# Generate Proposal on Button Click
-# ----------------------------
-if st.button("Generate Proposal"):
-    try:
-        llm = ChatOpenAI(
-            openai_api_key=os.getenv("OPENAI_API_KEY"),
-            model="gpt-4",
-            temperature=0.7
-        )
+# -------------------------
+# User input form
+with st.form("grant_form"):
+    project_title = st.text_input("Project Title")
+    project_description = st.text_area("Brief Project Description")
+    project_objectives = st.text_area("Key Objectives (comma-separated)")
+    funder_mission = st.text_area("Funder Mission")
+    funder_focus_areas = st.text_area("Funder Focus Areas")
+    funder_requirements = st.text_area("Funder Proposal Requirements")
 
-        prompt = grant_proposal_prompt.format(
-            project_title=project_title,
-            project_description=project_description,
-            project_objectives=project_objectives,
-            funder_mission=funder_mission,
-            funder_focus_areas=funder_focus_areas,
-            funder_requirements=funder_requirements,
-        )
+    submit = st.form_submit_button("Generate Proposal")
 
-        response = llm.predict(prompt)
+# -------------------------
+# Handle form submission
+if submit:
+    with st.spinner("Generating proposal..."):
+        try:
+            inputs = {
+                "project_title": project_title,
+                "project_description": project_description,
+                "project_objectives": project_objectives,
+                "funder_mission": funder_mission,
+                "funder_focus_areas": funder_focus_areas,
+                "funder_requirements": funder_requirements
+            }
 
-        st.subheader("Generated Proposal Introduction:")
-        st.success(response)
+            formatted_prompt = grant_proposal_prompt.format(**inputs)
+            response = llm.invoke(formatted_prompt)
 
-    except Exception as e:
-        st.error(f"Error generating proposal: {str(e)}")
+            st.subheader("📄 Generated Grant Proposal Introduction")
+            st.write(response.content)
+
+        except Exception as e:
+            st.error(f"Error generating proposal: {e}")
