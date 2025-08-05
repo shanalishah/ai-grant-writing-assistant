@@ -1,58 +1,58 @@
 import streamlit as st
 from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
+from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
-# Load from .env for local development (has no effect on Streamlit Cloud)
+# Load environment variables (for local testing only)
 load_dotenv()
 
-# Streamlit UI
-st.set_page_config(page_title="Grant Writing Assistant", layout="wide")
-st.title("🤖 AI Grant Proposal Assistant")
+# Get API key from environment (works in Streamlit Cloud via secrets.toml)
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-st.markdown("This assistant helps generate grant proposal text from your inputs.")
+# Explicitly create OpenAI client to avoid the `proxies` bug
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Input fields
-objective = st.text_area("Project Objective", placeholder="Describe the core objective of the project")
-audience = st.text_area("Target Audience", placeholder="Who will benefit from this project?")
-outcomes = st.text_area("Expected Outcomes", placeholder="What results do you anticipate?")
-budget = st.text_area("Budget Overview", placeholder="Brief overview of budget")
-timeline = st.text_area("Project Timeline", placeholder="Milestones, duration, phases")
-
-# Generate prompt
-template = """
-You are a grant writing assistant. Based on the following inputs, generate a well-written paragraph suitable for a grant proposal:
-
-Objective: {objective}
-Target Audience: {audience}
-Expected Outcomes: {outcomes}
-Budget: {budget}
-Timeline: {timeline}
-
-Write in a formal, clear, and persuasive tone.
-"""
-
-prompt = PromptTemplate(
-    input_variables=["objective", "audience", "outcomes", "budget", "timeline"],
-    template=template,
+# Initialize LangChain's ChatOpenAI with the client
+llm = ChatOpenAI(
+    model="gpt-4",
+    temperature=0.7,
+    client=client
 )
 
-# Initialize ChatOpenAI (uses OPENAI_API_KEY from environment/secrets automatically)
-llm = ChatOpenAI(model="gpt-4", temperature=0.7)
+# Streamlit app UI
+st.set_page_config(page_title="Grant Writing Assistant", layout="wide")
+st.title("AI Grant Proposal Writing Assistant")
+
+st.markdown("Fill in the fields below and click **Generate Proposal Text** to get started.")
+
+# Form inputs
+objective = st.text_area("Project Objective", help="Describe the primary goal of the grant project.")
+audience = st.text_area("Target Audience", help="Who will benefit from this project?")
+outcomes = st.text_area("Expected Outcomes", help="What are the intended outcomes or impact?")
+budget = st.text_area("Budget Overview", help="Summarize the funding needs and allocations.")
+timeline = st.text_area("Timeline", help="Provide a rough timeline or project phases.")
 
 if st.button("Generate Proposal Text"):
     if not all([objective, audience, outcomes, budget, timeline]):
-        st.warning("Please fill in all fields before generating.")
+        st.warning("Please fill in all fields before generating proposal text.")
     else:
         with st.spinner("Generating proposal..."):
-            chain = prompt | llm
-            response = chain.invoke({
-                "objective": objective,
-                "audience": audience,
-                "outcomes": outcomes,
-                "budget": budget,
-                "timeline": timeline
-            })
-            st.success("Generated Proposal Text:")
-            st.text_area("Proposal Output", value=response.content, height=300)
+            prompt = f"""
+            You are an expert grant writer. Based on the details provided below, write a compelling grant proposal draft.
+
+            Project Objective: {objective}
+            Target Audience: {audience}
+            Expected Outcomes: {outcomes}
+            Budget Overview: {budget}
+            Timeline: {timeline}
+
+            Please write a professional, clear, and concise grant proposal draft.
+            """
+
+            try:
+                response = llm.invoke(prompt)
+                st.success("Proposal generated successfully!")
+                st.text_area("Generated Proposal", response.content, height=400)
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
