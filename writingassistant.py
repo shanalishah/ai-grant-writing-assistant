@@ -1,22 +1,24 @@
 import streamlit as st
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 import os
-import openai
 
 # -----------------------
 # Load API Key
 # -----------------------
 load_dotenv()
-openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
-if not openai.api_key:
+if not OPENAI_API_KEY:
     st.error("OPENAI_API_KEY not found. Please set it in Streamlit Secrets or a local .env file.")
     st.stop()
 
+# -----------------------
+# Create ChatOpenAI Instance
+# -----------------------
 llm = ChatOpenAI(
-    openai_api_key=openai.api_key,
+    api_key=OPENAI_API_KEY,
     model="gpt-4",
     temperature=0.7
 )
@@ -69,7 +71,7 @@ if submitted:
         response = llm.invoke(prompt)
 
         st.subheader("Generated Proposal Introduction")
-        st.success(response.content if hasattr(response, 'content') else response)
+        st.success(response)
 
     except Exception as e:
         st.error(f"Error generating proposal: {e}")
