@@ -1,30 +1,32 @@
 # writingassistant.py
 
 import streamlit as st
-# from langchain.chat_models import ChatOpenAI
-# from langchain_openai import ChatOpenAI
-from langchain_community.chat_models import ChatOpenAI
+# Use the modern, correct import
+from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 import os
 
-# Load API key from Streamlit secrets
+# Load API key and Project ID from Streamlit secrets
 try:
-    # Use st.secrets for deployment
     api_key = st.secrets["OPENAI_API_KEY"]
-except KeyError:
-    # Fallback for local development if you still want to use .env
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY not found in .env file.")
-    except (ImportError, ValueError) as e:
-        st.error(f"API key not found. Please set it in Streamlit secrets or your .env file. Error: {e}")
-        st.stop()
+    project_id = st.secrets["OPENAI_PROJECT_ID"]
+except KeyError as e:
+    st.error(f"The secret '{e.args[0]}' was not found. Please add it to your Streamlit app secrets.")
+    st.stop()
 
-# Set up LLM
-llm = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=api_key)
+# Set up LLM, passing the project ID
+try:
+    llm = ChatOpenAI(
+        model="gpt-4",
+        temperature=0.7,
+        openai_api_key=api_key,
+        # This is the new required parameter for project-specific keys
+        project=project_id
+    )
+except Exception as e:
+    st.error(f"Failed to initialize the OpenAI model. Error: {e}")
+    st.stop()
+
 
 # Define Prompt
 grant_proposal_prompt = PromptTemplate(
@@ -56,7 +58,6 @@ with st.form("grant_form"):
     submitted = st.form_submit_button("Generate Proposal")
 
 if submitted:
-    # Basic validation to ensure fields are not empty
     if not all([project_title, project_description, project_objectives, funder_mission, funder_focus_areas, funder_requirements]):
         st.warning("Please fill out all the fields in the form.")
     else:
@@ -71,8 +72,10 @@ if submitted:
                     "funder_requirements": funder_requirements,
                 }
 
-                prompt = grant_proposal_prompt.format(**inputs)
-                response = llm.invoke(prompt)
+                # Note: llm.invoke now directly takes a string if the prompt template is simple
+                # For clarity, we'll format it first.
+                prompt_text = grant_proposal_prompt.format(**inputs)
+                response = llm.invoke(prompt_text)
 
                 st.subheader("Generated Grant Proposal Introduction:")
                 st.write(response.content)
