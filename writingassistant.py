@@ -1,20 +1,13 @@
-import streamlit as st
-from langchain_openai import ChatOpenAI
-from dotenv import load_dotenv
 import os
+import streamlit as st
+import openai
+from dotenv import load_dotenv
 
-# Load environment variables (local only)
+# Load environment variables (for local testing)
 load_dotenv()
 
-# Get OpenAI key from environment (or Streamlit Cloud secrets)
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-
-# ✅ Initialize ChatOpenAI the correct way (NO client param)
-llm = ChatOpenAI(
-    model="gpt-4",
-    temperature=0.7,
-    openai_api_key=OPENAI_API_KEY
-)
+# Get the OpenAI API key
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 # Streamlit UI
 st.set_page_config(page_title="Grant Writing Assistant", layout="wide")
@@ -34,19 +27,25 @@ if st.button("Generate Proposal Text"):
     else:
         with st.spinner("Generating proposal..."):
             prompt = f"""
-            You are an expert grant writer. Based on the details provided below, write a compelling grant proposal draft.
+You are an expert grant writer. Write a compelling grant proposal based on the following details:
 
-            Project Objective: {objective}
-            Target Audience: {audience}
-            Expected Outcomes: {outcomes}
-            Budget Overview: {budget}
-            Timeline: {timeline}
+Project Objective: {objective}
+Target Audience: {audience}
+Expected Outcomes: {outcomes}
+Budget Overview: {budget}
+Timeline: {timeline}
 
-            Please write a professional, clear, and concise grant proposal draft.
-            """
+Please write in a professional and clear tone suitable for funding agencies.
+"""
+
             try:
-                response = llm.invoke(prompt)
+                response = openai.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.7,
+                )
+                proposal_text = response.choices[0].message["content"]
                 st.success("Proposal generated successfully!")
-                st.text_area("Generated Proposal", response.content, height=400)
+                st.text_area("Generated Proposal", proposal_text, height=400)
             except Exception as e:
                 st.error(f"An error occurred: {e}")
