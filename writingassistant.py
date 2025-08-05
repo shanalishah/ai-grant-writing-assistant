@@ -3,16 +3,23 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 import os
+import openai
 
 # -----------------------
-# Load API Key (for local .env)
+# Load API Key
 # -----------------------
 load_dotenv()
+openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
-# -----------------------
-# Initialize LLM (uses OPENAI_API_KEY from env or Streamlit secrets)
-# -----------------------
-llm = ChatOpenAI.from_env(model="gpt-4", temperature=0.7)
+if not openai.api_key:
+    st.error("OPENAI_API_KEY not found. Please set it in Streamlit Secrets or a local .env file.")
+    st.stop()
+
+llm = ChatOpenAI(
+    openai_api_key=openai.api_key,
+    model="gpt-4",
+    temperature=0.7
+)
 
 # -----------------------
 # Grant Proposal Prompt Template
