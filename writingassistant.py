@@ -12,7 +12,7 @@ if not os.getenv("OPENAI_API_KEY"):
     st.error("OPENAI_API_KEY is missing. Check your .env or Streamlit secrets.")
     st.stop()
 
-# ✅ Use from_env() to avoid ValidationError
+# Use from_env() to avoid ValidationError
 llm = ChatOpenAI.from_env(model="gpt-4", temperature=0.7)
 
 # Prompt definition
