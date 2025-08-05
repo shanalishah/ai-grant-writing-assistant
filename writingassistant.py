@@ -1,45 +1,79 @@
+# writingassistant.py
+
 import streamlit as st
-from openai import OpenAI
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts import PromptTemplate
 import os
 
-# Setup client using OpenAI v1+ SDK (secure, cloud-ready)
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+# Load API key from Streamlit secrets
+try:
+    # Use st.secrets for deployment
+    api_key = st.secrets["OPENAI_API_KEY"]
+except KeyError:
+    # Fallback for local development if you still want to use .env
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY not found in .env file.")
+    except (ImportError, ValueError) as e:
+        st.error(f"API key not found. Please set it in Streamlit secrets or your .env file. Error: {e}")
+        st.stop()
 
-st.set_page_config(page_title="Grant Proposal Assistant", layout="centered")
-st.title("🎯 AI Grant Proposal Assistant")
+# Set up LLM
+llm = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=api_key)
 
-# Input fields
-objective = st.text_input("🎯 Project Objective")
-audience = st.text_input("👥 Target Audience")
-outcomes = st.text_area("📈 Expected Outcomes")
-budget = st.text_area("💵 Budget Details")
-timeline = st.text_area("⏳ Project Timeline")
+# Define Prompt
+grant_proposal_prompt = PromptTemplate(
+    input_variables=[
+        "project_title", "project_description", "project_objectives",
+        "funder_mission", "funder_focus_areas", "funder_requirements"
+    ],
+    template=(
+        "Write a compelling grant proposal introduction for a project titled '{project_title}'. "
+        "The project aims to {project_description}. Key objectives of the project include: {project_objectives}. "
+        "The funder has the following mission: {funder_mission}, with focus areas in {funder_focus_areas}. "
+        "Proposals must align with these requirements: {funder_requirements}. "
+        "Ensure the introduction highlights how the project aligns with the funder's priorities and demonstrates measurable impacts."
+    ),
+)
 
-if st.button("Generate Proposal Text"):
-    if not all([objective, audience, outcomes, budget, timeline]):
-        st.warning("Please fill in all fields.")
+# Streamlit UI
+st.title("Grant Proposal Writing Assistant")
+st.markdown("Fill in the details below to generate a grant proposal introduction.")
+
+with st.form("grant_form"):
+    project_title = st.text_input("Project Title", placeholder="e.g., Restoring Wetlands in Upstate NY")
+    project_description = st.text_area("Project Description", placeholder="e.g., Restore 100 acres of wetlands...")
+    project_objectives = st.text_area("Project Objectives (comma separated)", placeholder="e.g., Improve biodiversity, Reduce flood risk")
+    funder_mission = st.text_area("Funder's Mission")
+    funder_focus_areas = st.text_area("Funder's Focus Areas")
+    funder_requirements = st.text_area("Funder's Requirements")
+    
+    submitted = st.form_submit_button("Generate Proposal")
+
+if submitted:
+    # Basic validation to ensure fields are not empty
+    if not all([project_title, project_description, project_objectives, funder_mission, funder_focus_areas, funder_requirements]):
+        st.warning("Please fill out all the fields in the form.")
     else:
-        with st.spinner("Generating proposal..."):
-            prompt = f"""
-You are a grant proposal writing assistant. Given the following details, draft a concise and persuasive grant proposal:
+        try:
+            with st.spinner("Generating proposal..."):
+                inputs = {
+                    "project_title": project_title,
+                    "project_description": project_description,
+                    "project_objectives": project_objectives,
+                    "funder_mission": funder_mission,
+                    "funder_focus_areas": funder_focus_areas,
+                    "funder_requirements": funder_requirements,
+                }
 
-Objective: {objective}
-Target Audience: {audience}
-Expected Outcomes: {outcomes}
-Budget: {budget}
-Timeline: {timeline}
+                prompt = grant_proposal_prompt.format(**inputs)
+                response = llm.invoke(prompt)
 
-Write in a professional and persuasive tone.
-"""
-            try:
-                response = client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7
-                )
-                proposal = response.choices[0].message.content
-                st.subheader("📝 Generated Grant Proposal")
-                st.write(proposal)
+                st.subheader("Generated Grant Proposal Introduction:")
+                st.write(response.content)
 
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
+        except Exception as e:
+            st.error(f"Error generating proposal: {e}")
