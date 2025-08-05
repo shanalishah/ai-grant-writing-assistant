@@ -5,13 +5,36 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 import os
 
-# Load API key and Project ID from Streamlit secrets
+# --- Unified Credential Loading ---
+# This block will work for both local and deployed environments.
+
+api_key = None
+project_id = None
+
+# First, try to load from Streamlit secrets (for deployed app)
 try:
     api_key = st.secrets["OPENAI_API_KEY"]
     project_id = st.secrets["OPENAI_PROJECT_ID"]
-except KeyError as e:
-    st.error(f"The secret '{e.args[0]}' was not found. Please add it to your Streamlit app secrets.")
+# If that fails, load from .env file (for local development)
+except (KeyError, FileNotFoundError):
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
+        project_id = os.getenv("OPENAI_PROJECT_ID")
+    except ImportError:
+        # This handles the case where python-dotenv is not installed
+        st.error("python-dotenv is not installed. Please run 'pip install python-dotenv' for local development.")
+        st.stop()
+
+
+# Final check to ensure credentials are loaded
+if not api_key or not project_id:
+    st.error("OpenAI API key or Project ID not found. Please set them in your Streamlit secrets or a local .env file.")
     st.stop()
+
+# --- End of Credential Loading ---
+
 
 # Set up LLM, passing the Project ID as a default header
 try:
