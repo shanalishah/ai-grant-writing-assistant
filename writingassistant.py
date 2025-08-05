@@ -13,7 +13,9 @@ if not OPENAI_API_KEY:
     st.error("OPENAI_API_KEY not found. Please set it in your environment or Streamlit Secrets.")
     st.stop()
 
-llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-4", temperature=0.7)
+os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+llm = ChatOpenAI(model="gpt-4", temperature=0.7)
+# llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-4", temperature=0.7)
 
 # -----------------------
 # Grant Proposal Prompt Template
