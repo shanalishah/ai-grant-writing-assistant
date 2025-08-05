@@ -17,9 +17,10 @@ import os
 # -------------------------
 
 # Loading API key which is saved in a file named .env saved in the same folder as this jupyter file. 
-load_dotenv()
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+os.environ["OPENAI_API_KEY"] = api_key
 
 # -------------------------
 
