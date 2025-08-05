@@ -4,17 +4,18 @@ from dotenv import load_dotenv
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
-# Load .env (for local dev)
+# Load .env file for local development (ignored in Streamlit Cloud)
 load_dotenv()
 
-# Ensure API key is present in env
+# Safety check
 if not os.getenv("OPENAI_API_KEY"):
-    st.error("OPENAI_API_KEY is missing. Please check your .env or Streamlit secrets.")
+    st.error("OPENAI_API_KEY is missing. Check your .env or Streamlit secrets.")
     st.stop()
 
-# No need to pass API key directly anymore
-llm = ChatOpenAI(model="gpt-4", temperature=0.7)
+# ✅ Use from_env() to avoid ValidationError
+llm = ChatOpenAI.from_env(model="gpt-4", temperature=0.7)
 
+# Prompt definition
 grant_proposal_prompt = PromptTemplate(
     input_variables=[
         "project_title", "project_description", "project_objectives",
@@ -29,6 +30,7 @@ grant_proposal_prompt = PromptTemplate(
     ),
 )
 
+# Streamlit UI
 st.title("Grant Proposal Writing Assistant")
 st.markdown("Fill in the details below to generate a grant proposal introduction.")
 
