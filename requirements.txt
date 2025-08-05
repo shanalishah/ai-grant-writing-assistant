@@ -1,6 +1,6 @@
 # requirements.txt
-streamlit==1.35.0
-openai==1.12.0
-langchain==0.1.9
-langchain-community==0.0.22
-python-dotenv==1.0.1
+streamlit
+langchain
+langchain-openai
+openai
+python-dotenv
