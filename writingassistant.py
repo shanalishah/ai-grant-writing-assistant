@@ -6,7 +6,7 @@
 
 # -------------------------
 
-!pip install langchain openai python-dotenv
+# !pip install langchain openai python-dotenv
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import ConversationChain
 from langchain.prompts import PromptTemplate
