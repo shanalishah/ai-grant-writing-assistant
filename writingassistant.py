@@ -1,43 +1,46 @@
 import streamlit as st
-from openai import OpenAI
+import openai
+import os
 
-st.set_page_config(page_title="Grant Writing Assistant", layout="wide")
-st.title("AI Grant Proposal Writing Assistant")
+# Set up OpenAI API key securely from Streamlit Cloud secrets
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 
-st.markdown("Fill in the fields below and click **Generate Proposal Text** to get started.")
+st.set_page_config(page_title="Grant Proposal Assistant", layout="centered")
+st.title("🎯 AI Grant Proposal Assistant")
 
-objective = st.text_area("Project Objective", help="Describe the primary goal of the grant project.")
-audience = st.text_area("Target Audience", help="Who will benefit from this project?")
-outcomes = st.text_area("Expected Outcomes", help="What are the intended outcomes or impact?")
-budget = st.text_area("Budget Overview", help="Summarize the funding needs and allocations.")
-timeline = st.text_area("Timeline", help="Provide a rough timeline or project phases.")
-
-client = OpenAI()  # ✅ secure and cloud-friendly
+# Input fields
+objective = st.text_input("🎯 Project Objective")
+audience = st.text_input("👥 Target Audience")
+outcomes = st.text_area("📈 Expected Outcomes")
+budget = st.text_area("💵 Budget Details")
+timeline = st.text_area("⏳ Project Timeline")
 
 if st.button("Generate Proposal Text"):
     if not all([objective, audience, outcomes, budget, timeline]):
-        st.warning("Please fill in all fields before generating proposal text.")
+        st.warning("Please fill in all fields.")
     else:
         with st.spinner("Generating proposal..."):
             prompt = f"""
-You are an expert grant writer. Write a compelling grant proposal based on the following details:
+You are a grant proposal writing assistant. Given the following details, draft a concise and persuasive grant proposal:
 
-Project Objective: {objective}
+Objective: {objective}
 Target Audience: {audience}
 Expected Outcomes: {outcomes}
-Budget Overview: {budget}
+Budget: {budget}
 Timeline: {timeline}
 
-Please write in a professional and clear tone suitable for funding agencies.
+Write in a professional and persuasive tone.
 """
+
             try:
-                response = client.chat.completions.create(
+                response = openai.ChatCompletion.create(
                     model="gpt-4",
                     messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7,
+                    temperature=0.7
                 )
-                proposal_text = response.choices[0].message.content
-                st.success("Proposal generated successfully!")
-                st.text_area("Generated Proposal", proposal_text, height=400)
+                proposal = response["choices"][0]["message"]["content"]
+                st.subheader("📝 Generated Grant Proposal")
+                st.write(proposal)
+
             except Exception as e:
-                st.error(f"An error occurred:\n\n{e}")
+                st.error(f"An error occurred: {e}")
