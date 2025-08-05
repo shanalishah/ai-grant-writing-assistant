@@ -1,31 +1,24 @@
-import os
 import streamlit as st
-from dotenv import load_dotenv
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
+import os
 
-# -------------------------
-# Page config
-st.set_page_config(page_title="AI-Powered Grant Proposal Assistant", page_icon="🌿")
+# -----------------------
+# Load OpenAI API Key
+# -----------------------
 
-# -------------------------
-# Header
-st.title("🌿 AI-Powered Grant Proposal Assistant")
-st.write("Generate a compelling grant proposal introduction aligned with funder requirements.")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", None)
 
-# -------------------------
-# Load API Key from Streamlit secrets
-os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+if not OPENAI_API_KEY:
+    st.error("OPENAI_API_KEY not found. Please set it in your environment or Streamlit Secrets.")
+    st.stop()
 
-# -------------------------
-# Set up LLM
-llm = ChatOpenAI(
-    model="gpt-4",
-    temperature=0.7,
-)
+llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-4", temperature=0.7)
 
-# -------------------------
-# Define prompt template
+# -----------------------
+# Grant Proposal Prompt Template
+# -----------------------
+
 grant_proposal_prompt = PromptTemplate(
     input_variables=[
         "project_title", "project_description", "project_objectives",
@@ -33,44 +26,46 @@ grant_proposal_prompt = PromptTemplate(
     ],
     template=(
         "Write a compelling grant proposal introduction for a project titled '{project_title}'. "
-        "The project aims to {project_description}. Key objectives of the project include: {project_objectives}. "
-        "The funder has the following mission: {funder_mission}, with focus areas in {funder_focus_areas}. "
-        "Proposals must align with these requirements: {funder_requirements}. "
-        "Ensure the introduction highlights how the project aligns with the funder's priorities and demonstrates measurable impacts."
+        "The project aims to {project_description}. Key objectives include: {project_objectives}. "
+        "The funder’s mission is: {funder_mission}, with focus areas in {funder_focus_areas}. "
+        "Proposals must meet these requirements: {funder_requirements}. "
+        "Ensure the introduction emphasizes alignment with the funder’s goals and demonstrates measurable impact."
     ),
 )
 
-# -------------------------
-# User input form
-with st.form("grant_form"):
+# -----------------------
+# Streamlit App Interface
+# -----------------------
+
+st.set_page_config(page_title="AI Grant Proposal Assistant", layout="centered")
+st.title("AI-Powered Grant Proposal Writing Assistant")
+st.markdown("Fill in the details below to generate a professional proposal introduction:")
+
+with st.form("proposal_form"):
     project_title = st.text_input("Project Title")
     project_description = st.text_area("Brief Project Description")
     project_objectives = st.text_area("Key Objectives (comma-separated)")
-    funder_mission = st.text_area("Funder Mission")
-    funder_focus_areas = st.text_area("Funder Focus Areas")
-    funder_requirements = st.text_area("Funder Proposal Requirements")
+    funder_mission = st.text_area("Funder’s Mission")
+    funder_focus_areas = st.text_area("Funder’s Focus Areas")
+    funder_requirements = st.text_area("Funder’s Requirements")
 
-    submit = st.form_submit_button("Generate Proposal")
+    submitted = st.form_submit_button("Generate Proposal")
 
-# -------------------------
-# Handle form submission
-if submit:
-    with st.spinner("Generating proposal..."):
-        try:
-            inputs = {
-                "project_title": project_title,
-                "project_description": project_description,
-                "project_objectives": project_objectives,
-                "funder_mission": funder_mission,
-                "funder_focus_areas": funder_focus_areas,
-                "funder_requirements": funder_requirements
-            }
+if submitted:
+    try:
+        prompt = grant_proposal_prompt.format(
+            project_title=project_title,
+            project_description=project_description,
+            project_objectives=project_objectives,
+            funder_mission=funder_mission,
+            funder_focus_areas=funder_focus_areas,
+            funder_requirements=funder_requirements
+        )
 
-            formatted_prompt = grant_proposal_prompt.format(**inputs)
-            response = llm.invoke(formatted_prompt)
+        response = llm.predict(prompt)
 
-            st.subheader("📄 Generated Grant Proposal Introduction")
-            st.write(response.content)
+        st.subheader("Generated Proposal Introduction")
+        st.success(response)
 
-        except Exception as e:
-            st.error(f"Error generating proposal: {e}")
+    except Exception as e:
+        st.error(f"Error generating proposal: {e}")
