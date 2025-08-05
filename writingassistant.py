@@ -1,7 +1,6 @@
 # writingassistant.py
 
 import streamlit as st
-# Use the modern, correct import
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 import os
@@ -14,19 +13,20 @@ except KeyError as e:
     st.error(f"The secret '{e.args[0]}' was not found. Please add it to your Streamlit app secrets.")
     st.stop()
 
-# Set up LLM, passing the project ID
+# Set up LLM, passing the Project ID as a default header
 try:
     llm = ChatOpenAI(
         model="gpt-4",
         temperature=0.7,
         openai_api_key=api_key,
-        # This is the new required parameter for project-specific keys
-        project=project_id
+        # This is the correct way to pass the Project ID
+        default_headers={
+            "OpenAI-Project": project_id
+        }
     )
 except Exception as e:
     st.error(f"Failed to initialize the OpenAI model. Error: {e}")
     st.stop()
-
 
 # Define Prompt
 grant_proposal_prompt = PromptTemplate(
@@ -72,8 +72,6 @@ if submitted:
                     "funder_requirements": funder_requirements,
                 }
 
-                # Note: llm.invoke now directly takes a string if the prompt template is simple
-                # For clarity, we'll format it first.
                 prompt_text = grant_proposal_prompt.format(**inputs)
                 response = llm.invoke(prompt_text)
 
