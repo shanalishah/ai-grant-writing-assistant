@@ -2,25 +2,23 @@ import streamlit as st
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 import os
+import openai
 
 # -----------------------
 # Load OpenAI API Key
 # -----------------------
-
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", None)
+openai.api_key = OPENAI_API_KEY
 
 if not OPENAI_API_KEY:
-    st.error("OPENAI_API_KEY not found. Please set it in your environment or Streamlit Secrets.")
+    st.error("OPENAI_API_KEY not found. Please set it in your .env file (locally) or Streamlit Secrets.")
     st.stop()
 
-os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
-llm = ChatOpenAI(model="gpt-4", temperature=0.7)
-# llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-4", temperature=0.7)
+llm = ChatOpenAI(openai_api_key=openai.api_key, model="gpt-4", temperature=0.7)
 
 # -----------------------
 # Grant Proposal Prompt Template
 # -----------------------
-
 grant_proposal_prompt = PromptTemplate(
     input_variables=[
         "project_title", "project_description", "project_objectives",
@@ -38,18 +36,17 @@ grant_proposal_prompt = PromptTemplate(
 # -----------------------
 # Streamlit App Interface
 # -----------------------
-
 st.set_page_config(page_title="AI Grant Proposal Assistant", layout="centered")
-st.title("AI-Powered Grant Proposal Writing Assistant")
-st.markdown("Fill in the details below to generate a professional proposal introduction:")
+st.title("🌿 AI-Powered Grant Proposal Assistant")
+st.markdown("Generate a compelling grant proposal introduction aligned with funder requirements.")
 
 with st.form("proposal_form"):
     project_title = st.text_input("Project Title")
     project_description = st.text_area("Brief Project Description")
     project_objectives = st.text_area("Key Objectives (comma-separated)")
-    funder_mission = st.text_area("Funder’s Mission")
-    funder_focus_areas = st.text_area("Funder’s Focus Areas")
-    funder_requirements = st.text_area("Funder’s Requirements")
+    funder_mission = st.text_area("Funder Mission")
+    funder_focus_areas = st.text_area("Funder Focus Areas")
+    funder_requirements = st.text_area("Funder Proposal Requirements")
 
     submitted = st.form_submit_button("Generate Proposal")
 
