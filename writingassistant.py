@@ -1,16 +1,6 @@
-import os
 import streamlit as st
-import openai
 from openai import OpenAI
-from dotenv import load_dotenv
 
-# Load environment variables (for local testing)
-load_dotenv()
-
-# Initialize OpenAI client
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-# Streamlit UI
 st.set_page_config(page_title="Grant Writing Assistant", layout="wide")
 st.title("AI Grant Proposal Writing Assistant")
 
@@ -21,6 +11,8 @@ audience = st.text_area("Target Audience", help="Who will benefit from this proj
 outcomes = st.text_area("Expected Outcomes", help="What are the intended outcomes or impact?")
 budget = st.text_area("Budget Overview", help="Summarize the funding needs and allocations.")
 timeline = st.text_area("Timeline", help="Provide a rough timeline or project phases.")
+
+client = OpenAI()  # ✅ secure and cloud-friendly
 
 if st.button("Generate Proposal Text"):
     if not all([objective, audience, outcomes, budget, timeline]):
