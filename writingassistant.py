@@ -5,26 +5,19 @@ from dotenv import load_dotenv
 import os
 
 # -----------------------
-# Load environment variables
+# Load API Key from .env (for local testing)
 # -----------------------
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-if not OPENAI_API_KEY:
-    st.error("OPENAI_API_KEY not found. Please set it in your .env file or Streamlit secrets.")
-    st.stop()
+load_dotenv()  # Only needed if running locally with a .env file
 
 # -----------------------
-# Initialize OpenAI LLM
+# Streamlit Page Config
 # -----------------------
-llm = ChatOpenAI(
-    openai_api_key=OPENAI_API_KEY,
-    model="gpt-4",
-    temperature=0.7
-)
+st.set_page_config(page_title="AI Grant Proposal Assistant", layout="centered")
+st.title("📝 AI-Powered Grant Proposal Writing Assistant")
+st.markdown("Fill in the details below to generate a professional proposal introduction:")
 
 # -----------------------
-# Prompt Template
+# Grant Proposal Prompt Template
 # -----------------------
 grant_proposal_prompt = PromptTemplate(
     input_variables=[
@@ -41,13 +34,20 @@ grant_proposal_prompt = PromptTemplate(
 )
 
 # -----------------------
-# Streamlit UI
+# Load LLM (from env or Streamlit secrets)
 # -----------------------
-st.set_page_config(page_title="AI Grant Proposal Assistant", layout="centered")
-st.title("🎯 AI-Powered Grant Proposal Writing Assistant")
+try:
+    llm = ChatOpenAI(
+        model="gpt-4",
+        temperature=0.7
+    )
+except Exception as e:
+    st.error(f"Error initializing LLM: {e}")
+    st.stop()
 
-st.markdown("Fill in the details below to generate a professional grant proposal introduction:")
-
+# -----------------------
+# Streamlit Form
+# -----------------------
 with st.form("proposal_form"):
     project_title = st.text_input("Project Title")
     project_description = st.text_area("Brief Project Description")
@@ -55,9 +55,11 @@ with st.form("proposal_form"):
     funder_mission = st.text_area("Funder’s Mission")
     funder_focus_areas = st.text_area("Funder’s Focus Areas")
     funder_requirements = st.text_area("Funder’s Requirements")
-
     submitted = st.form_submit_button("Generate Proposal")
 
+# -----------------------
+# On Submit
+# -----------------------
 if submitted:
     try:
         prompt = grant_proposal_prompt.format(
@@ -70,8 +72,7 @@ if submitted:
         )
 
         response = llm.invoke(prompt)
-
-        st.subheader("✍️ Generated Proposal Introduction")
+        st.subheader("✅ Generated Proposal Introduction")
         st.success(response)
 
     except Exception as e:
