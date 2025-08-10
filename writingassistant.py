@@ -1,9 +1,11 @@
-# writingassistant.py
-
 import os
 import streamlit as st
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
+from docx import Document
+from io import BytesIO
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
 
 # ========= Credentials =========
 api_key = None
@@ -28,7 +30,7 @@ llm = ChatOpenAI(
     openai_api_key=api_key,
 )
 
-# ========= Prompt (Email-style full proposal) =========
+# ========= Prompt =========
 email_proposal_prompt = PromptTemplate(
     input_variables=[
         "project_title",
@@ -40,10 +42,10 @@ email_proposal_prompt = PromptTemplate(
         "target_audience"
     ],
     template=(
-        "You are an experienced grant writer. Using ONLY the inputs below, draft a **full, email-style grant proposal** "
-        "written as 3–6 cohesive paragraphs (no headings, no bullet lists). Do **not** include a greeting or a sign-off. "
-        "If a detail is missing, write 'TBD' rather than inventing facts. Keep the tone professional, persuasive, and concise. "
-        "Aim for 500–900 words. Avoid placeholders like [Funder Name] or [Your Title].\n\n"
+        "You are an experienced grant writer. Using ONLY the inputs below, draft a full, email-style grant proposal "
+        "written as 3–6 cohesive paragraphs (no headings, no bullet lists). Do not include a greeting or a sign-off. "
+        "If a detail is missing, write 'TBD'. Keep the tone professional, persuasive, and concise. "
+        "Aim for 500–900 words.\n\n"
         "Inputs:\n"
         "- Project Title: {project_title}\n"
         "- Project Description: {project_description}\n"
@@ -53,7 +55,7 @@ email_proposal_prompt = PromptTemplate(
         "- Funder Requirements: {funder_requirements}\n"
         "- Target Audience/Beneficiaries: {target_audience}\n\n"
         "Output:\n"
-        "A polished, multi-paragraph email-style proposal body (no salutation, no signature), grounded only in the inputs."
+        "A polished, multi-paragraph email-style proposal body."
     ),
 )
 
@@ -64,34 +66,13 @@ st.title("AI-Powered Grant Writing Assistant")
 st.caption("Provide the essential details and the assistant will generate a proposal based on your inputs.")
 
 with st.form("proposal_form"):
-    project_title = st.text_input(
-        "Project Title",
-        placeholder="Restoring Wetlands in Upstate NY"
-    )
-    project_description = st.text_area(
-        "Project Description",
-        placeholder="Restore 100 acres of degraded wetlands to improve flood control and biodiversity."
-    )
-    project_objectives = st.text_area(
-        "Key Objectives (comma-separated)",
-        placeholder="Increase native species richness by 20%; Reduce peak runoff by 12% within 12 months"
-    )
-    funder_mission = st.text_area(
-        "Funder Mission",
-        placeholder="Advance climate resilience and ecological restoration."
-    )
-    funder_focus_areas = st.text_area(
-        "Funder Focus Areas",
-        placeholder="Water resources; biodiversity; resilient infrastructure"
-    )
-    funder_requirements = st.text_area(
-        "Funder Requirements",
-        placeholder="Evidence-based outcomes; community engagement; budget justification"
-    )
-    target_audience = st.text_area(
-        "Target Audience / Beneficiaries (optional)",
-        placeholder="Communities in flood-prone watersheds; local conservation partners"
-    )
+    project_title = st.text_input("Project Title", placeholder="Restoring Wetlands in Upstate NY")
+    project_description = st.text_area("Project Description", placeholder="Restore 100 acres of degraded wetlands...")
+    project_objectives = st.text_area("Key Objectives (comma-separated)", placeholder="Increase biodiversity by 20%...")
+    funder_mission = st.text_area("Funder Mission", placeholder="Advance climate resilience and ecological restoration.")
+    funder_focus_areas = st.text_area("Funder Focus Areas", placeholder="Water resources; biodiversity; resilient infrastructure")
+    funder_requirements = st.text_area("Funder Requirements", placeholder="Evidence-based outcomes; community engagement")
+    target_audience = st.text_area("Target Audience / Beneficiaries (optional)", placeholder="Communities in flood-prone areas")
 
     submitted = st.form_submit_button("Generate Proposal")
 
@@ -115,11 +96,32 @@ if submitted:
         st.subheader("Generated Proposal")
         st.markdown(body)
 
+        # --- DOCX file ---
+        docx_buffer = BytesIO()
+        doc = Document()
+        doc.add_paragraph(body)
+        doc.save(docx_buffer)
+        docx_buffer.seek(0)
+
         st.download_button(
-            label="⬇️ Download",
-            data=body.encode("utf-8"),
-            file_name=f"{(fields['project_title'] or 'proposal').replace(' ', '_')}.md",
-            mime="text/markdown",
+            label="⬇️ Download as DOCX",
+            data=docx_buffer,
+            file_name=f"{(fields['project_title'] or 'proposal').replace(' ', '_')}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+
+        # --- PDF file ---
+        pdf_buffer = BytesIO()
+        pdf_doc = SimpleDocTemplate(pdf_buffer)
+        styles = getSampleStyleSheet()
+        pdf_doc.build([Paragraph(body, styles["Normal"])])
+        pdf_buffer.seek(0)
+
+        st.download_button(
+            label="⬇️ Download as PDF",
+            data=pdf_buffer,
+            file_name=f"{(fields['project_title'] or 'proposal').replace(' ', '_')}.pdf",
+            mime="application/pdf",
         )
 
     except Exception as e:
