@@ -2,7 +2,6 @@
 
 import os
 from io import BytesIO
-
 import streamlit as st
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
@@ -41,14 +40,12 @@ _init_once()
 # =========================
 api_key = None
 try:
-    # Streamlit Cloud
-    api_key = st.secrets["OPENAI_API_KEY"]
+    api_key = st.secrets["OPENAI_API_KEY"]  # Streamlit Cloud
 except Exception:
-    # Local .env
     try:
         from dotenv import load_dotenv
         load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("OPENAI_API_KEY")  # local .env
     except Exception:
         pass
 
@@ -107,57 +104,64 @@ st.title("AI-Powered Grant Writing Assistant")
 st.caption("Provide the essential details and the assistant will generate a proposal based on your inputs.")
 
 with st.form("proposal_form"):
+    # Use DIFFERENT keys for input widgets (avoid overwriting widget state)
     st.text_input(
         "Project Title",
-        key="project_title",
+        key="inp_project_title",
         placeholder="Restoring Wetlands in Upstate NY",
+        value=st.session_state.project_title,  # prefill from stored value
     )
     st.text_area(
         "Project Description",
-        key="project_description",
+        key="inp_project_description",
         placeholder="Restore 100 acres of degraded wetlands to improve flood control and biodiversity.",
+        value=st.session_state.project_description,
     )
     st.text_area(
         "Key Objectives (comma-separated)",
-        key="project_objectives",
+        key="inp_project_objectives",
         placeholder="Increase native species richness by 20%; Reduce peak runoff by 12% within 12 months",
+        value=st.session_state.project_objectives,
     )
     st.text_area(
         "Funder Mission",
-        key="funder_mission",
+        key="inp_funder_mission",
         placeholder="Advance climate resilience and ecological restoration.",
+        value=st.session_state.funder_mission,
     )
     st.text_area(
         "Funder Focus Areas",
-        key="funder_focus_areas",
+        key="inp_funder_focus_areas",
         placeholder="Water resources; biodiversity; resilient infrastructure",
+        value=st.session_state.funder_focus_areas,
     )
     st.text_area(
         "Funder Requirements",
-        key="funder_requirements",
+        key="inp_funder_requirements",
         placeholder="Evidence-based outcomes; community engagement; budget justification",
+        value=st.session_state.funder_requirements,
     )
     st.text_area(
         "Target Audience / Beneficiaries (optional)",
-        key="target_audience",
+        key="inp_target_audience",
         placeholder="Communities in flood-prone watersheds; local conservation partners",
+        value=st.session_state.target_audience,
     )
 
     submitted = st.form_submit_button("Generate Proposal")
 
-# Persist + generate
 if submitted:
-    # trim whitespace once on submit
-    for k in [
-        "project_title",
-        "project_description",
-        "project_objectives",
-        "funder_mission",
-        "funder_focus_areas",
-        "funder_requirements",
-        "target_audience",
-    ]:
-        st.session_state[k] = (st.session_state.get(k) or "").strip()
+    # trim and persist
+    def _clean(k):
+        return (st.session_state.get(k) or "").strip()
+
+    st.session_state.project_title = _clean("inp_project_title")
+    st.session_state.project_description = _clean("inp_project_description")
+    st.session_state.project_objectives = _clean("inp_project_objectives")
+    st.session_state.funder_mission = _clean("inp_funder_mission")
+    st.session_state.funder_focus_areas = _clean("inp_funder_focus_areas")
+    st.session_state.funder_requirements = _clean("inp_funder_requirements")
+    st.session_state.target_audience = _clean("inp_target_audience")
 
     try:
         with st.spinner("Generating proposal..."):
@@ -178,7 +182,6 @@ if submitted:
     except Exception as e:
         st.error(f"Error generating proposal: {e}")
 
-# Render proposal + downloads (persist after reruns)
 if st.session_state.proposal_body:
     st.subheader("Generated Proposal")
     st.markdown(st.session_state.proposal_body)
