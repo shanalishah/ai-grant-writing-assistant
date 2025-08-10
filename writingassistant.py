@@ -13,8 +13,9 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
 
-# Session state init
-
+# =========================
+# Session state init (defaults once)
+# =========================
 def _init_once():
     defaults = {
         "proposal_body": "",
@@ -35,8 +36,9 @@ def _init_once():
 _init_once()
 
 
+# =========================
 # Credentials
-
+# =========================
 api_key = None
 try:
     # Streamlit Cloud
@@ -45,7 +47,6 @@ except Exception:
     # Local .env
     try:
         from dotenv import load_dotenv
-
         load_dotenv()
         api_key = os.getenv("OPENAI_API_KEY")
     except Exception:
@@ -56,8 +57,9 @@ if not api_key:
     st.stop()
 
 
+# =========================
 # Model
-
+# =========================
 llm = ChatOpenAI(
     model="gpt-4",
     temperature=0.3,
@@ -65,8 +67,9 @@ llm = ChatOpenAI(
 )
 
 
+# =========================
 # Prompt
-
+# =========================
 email_proposal_prompt = PromptTemplate(
     input_variables=[
         "project_title",
@@ -96,59 +99,65 @@ email_proposal_prompt = PromptTemplate(
 )
 
 
+# =========================
 # UI
-
+# =========================
 st.set_page_config(page_title="AI-Powered Grant Writing Assistant", layout="centered")
 st.title("AI-Powered Grant Writing Assistant")
 st.caption("Provide the essential details and the assistant will generate a proposal based on your inputs.")
 
 with st.form("proposal_form"):
-    project_title = st.text_input(
+    st.text_input(
         "Project Title",
-        value=st.session_state.project_title,
+        key="project_title",
         placeholder="Restoring Wetlands in Upstate NY",
     )
-    project_description = st.text_area(
+    st.text_area(
         "Project Description",
-        value=st.session_state.project_description,
+        key="project_description",
         placeholder="Restore 100 acres of degraded wetlands to improve flood control and biodiversity.",
     )
-    project_objectives = st.text_area(
+    st.text_area(
         "Key Objectives (comma-separated)",
-        value=st.session_state.project_objectives,
+        key="project_objectives",
         placeholder="Increase native species richness by 20%; Reduce peak runoff by 12% within 12 months",
     )
-    funder_mission = st.text_area(
+    st.text_area(
         "Funder Mission",
-        value=st.session_state.funder_mission,
+        key="funder_mission",
         placeholder="Advance climate resilience and ecological restoration.",
     )
-    funder_focus_areas = st.text_area(
+    st.text_area(
         "Funder Focus Areas",
-        value=st.session_state.funder_focus_areas,
+        key="funder_focus_areas",
         placeholder="Water resources; biodiversity; resilient infrastructure",
     )
-    funder_requirements = st.text_area(
+    st.text_area(
         "Funder Requirements",
-        value=st.session_state.funder_requirements,
+        key="funder_requirements",
         placeholder="Evidence-based outcomes; community engagement; budget justification",
     )
-    target_audience = st.text_area(
+    st.text_area(
         "Target Audience / Beneficiaries (optional)",
-        value=st.session_state.target_audience,
+        key="target_audience",
         placeholder="Communities in flood-prone watersheds; local conservation partners",
     )
 
     submitted = st.form_submit_button("Generate Proposal")
 
+# Persist + generate
 if submitted:
-    st.session_state.project_title = (project_title or "").strip()
-    st.session_state.project_description = (project_description or "").strip()
-    st.session_state.project_objectives = (project_objectives or "").strip()
-    st.session_state.funder_mission = (funder_mission or "").strip()
-    st.session_state.funder_focus_areas = (funder_focus_areas or "").strip()
-    st.session_state.funder_requirements = (funder_requirements or "").strip()
-    st.session_state.target_audience = (target_audience or "").strip()
+    # trim whitespace once on submit
+    for k in [
+        "project_title",
+        "project_description",
+        "project_objectives",
+        "funder_mission",
+        "funder_focus_areas",
+        "funder_requirements",
+        "target_audience",
+    ]:
+        st.session_state[k] = (st.session_state.get(k) or "").strip()
 
     try:
         with st.spinner("Generating proposal..."):
@@ -169,6 +178,7 @@ if submitted:
     except Exception as e:
         st.error(f"Error generating proposal: {e}")
 
+# Render proposal + downloads (persist after reruns)
 if st.session_state.proposal_body:
     st.subheader("Generated Proposal")
     st.markdown(st.session_state.proposal_body)
