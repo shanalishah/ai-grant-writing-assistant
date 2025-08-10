@@ -5,8 +5,6 @@ from io import BytesIO
 import streamlit as st
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
-
-# For downloads
 from docx import Document
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -19,6 +17,7 @@ def _init_once():
     defaults = {
         "proposal_body": "",
         "proposal_title": "proposal",
+        # stored (canonical) values that we’ll keep in sync with inputs on submit
         "project_title": "",
         "project_description": "",
         "project_objectives": "",
@@ -32,7 +31,27 @@ def _init_once():
             st.session_state[k] = v
 
 
+def _init_input_keys_once():
+    """
+    Initialize widget keys only once from stored values.
+    We avoid passing `value=` to widgets later so edits don't get overwritten on rerun.
+    """
+    mapping = {
+        "inp_project_title": "project_title",
+        "inp_project_description": "project_description",
+        "inp_project_objectives": "project_objectives",
+        "inp_funder_mission": "funder_mission",
+        "inp_funder_focus_areas": "funder_focus_areas",
+        "inp_funder_requirements": "funder_requirements",
+        "inp_target_audience": "target_audience",
+    }
+    for inp_key, store_key in mapping.items():
+        if inp_key not in st.session_state:
+            st.session_state[inp_key] = st.session_state.get(store_key, "")
+
+
 _init_once()
+_init_input_keys_once()
 
 
 # =========================
@@ -40,12 +59,13 @@ _init_once()
 # =========================
 api_key = None
 try:
-    api_key = st.secrets["OPENAI_API_KEY"]  # Streamlit Cloud
+    api_key = st.secrets["OPENAI_API_KEY"]  # Streamlit Cloud (Secrets)
 except Exception:
+    # Local .env for dev
     try:
         from dotenv import load_dotenv
         load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")  # local .env
+        api_key = os.getenv("OPENAI_API_KEY")
     except Exception:
         pass
 
@@ -104,55 +124,47 @@ st.title("AI-Powered Grant Writing Assistant")
 st.caption("Provide the essential details and the assistant will generate a proposal based on your inputs.")
 
 with st.form("proposal_form"):
-    # Use DIFFERENT keys for input widgets (avoid overwriting widget state)
     st.text_input(
         "Project Title",
         key="inp_project_title",
         placeholder="Restoring Wetlands in Upstate NY",
-        value=st.session_state.project_title,  # prefill from stored value
     )
     st.text_area(
         "Project Description",
         key="inp_project_description",
         placeholder="Restore 100 acres of degraded wetlands to improve flood control and biodiversity.",
-        value=st.session_state.project_description,
     )
     st.text_area(
         "Key Objectives (comma-separated)",
         key="inp_project_objectives",
         placeholder="Increase native species richness by 20%; Reduce peak runoff by 12% within 12 months",
-        value=st.session_state.project_objectives,
     )
     st.text_area(
         "Funder Mission",
         key="inp_funder_mission",
         placeholder="Advance climate resilience and ecological restoration.",
-        value=st.session_state.funder_mission,
     )
     st.text_area(
         "Funder Focus Areas",
         key="inp_funder_focus_areas",
         placeholder="Water resources; biodiversity; resilient infrastructure",
-        value=st.session_state.funder_focus_areas,
     )
     st.text_area(
         "Funder Requirements",
         key="inp_funder_requirements",
         placeholder="Evidence-based outcomes; community engagement; budget justification",
-        value=st.session_state.funder_requirements,
     )
     st.text_area(
         "Target Audience / Beneficiaries (optional)",
         key="inp_target_audience",
         placeholder="Communities in flood-prone watersheds; local conservation partners",
-        value=st.session_state.target_audience,
     )
 
     submitted = st.form_submit_button("Generate Proposal")
 
 if submitted:
-    # trim and persist
-    def _clean(k):
+    # Trim and persist from input keys to stored canonical keys
+    def _clean(k: str) -> str:
         return (st.session_state.get(k) or "").strip()
 
     st.session_state.project_title = _clean("inp_project_title")
@@ -182,6 +194,9 @@ if submitted:
     except Exception as e:
         st.error(f"Error generating proposal: {e}")
 
+# =========================
+# Output + Downloads
+# =========================
 if st.session_state.proposal_body:
     st.subheader("Generated Proposal")
     st.markdown(st.session_state.proposal_body)
