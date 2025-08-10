@@ -14,7 +14,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 
 
 # =========================
-# Session state init (defaults once)
+# Session state init
 # =========================
 def _init_once():
     defaults = {
