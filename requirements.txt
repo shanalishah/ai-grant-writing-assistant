@@ -1,7 +1,11 @@
 streamlit
-langchain
+langchain-core
+langchain-community
 langchain-openai
 openai
 python-dotenv
+tiktoken
+pandas
+numpy
 python-docx
 reportlab
