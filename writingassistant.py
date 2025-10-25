@@ -3,8 +3,9 @@
 import os
 from io import BytesIO
 import streamlit as st
+# from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from docx import Document
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
