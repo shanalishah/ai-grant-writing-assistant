@@ -1,5 +1,6 @@
 streamlit
 langchain
+langchain.prompts
 langchain-core
 langchain-community
 langchain-openai
